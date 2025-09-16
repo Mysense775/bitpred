@@ -1,0 +1,1245 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Биткоин Прогноз</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-color: #ff9900;
+            --secondary-color: #1698d9;
+            --success-color: #4CAF50;
+            --danger-color: #F44336;
+            --dark-bg: #1a1a2e;
+            --darker-bg: #16213e;
+            --text-color: #ffffff;
+            --text-secondary: #cccccc;
+            --card-bg: rgba(0, 0, 0, 0.3);
+            --card-border: rgba(255, 255, 255, 0.1);
+            --safe-area-inset-top: env(safe-area-inset-top, 0px);
+            --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
+            --safe-area-inset-left: env(safe-area-inset-left, 0px);
+            --safe-area-inset-right: env(safe-area-inset-right, 0px);
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, var(--dark-bg) 0%, var(--darker-bg) 100%);
+            color: var(--text-color);
+            min-height: 100vh;
+            padding: var(--safe-area-inset-top) var(--safe-area-inset-right) var(--safe-area-inset-bottom) var(--safe-area-inset-left);
+            overflow-x: hidden;
+            line-height: 1.4;
+        }
+
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+            padding: 12px;
+            padding-bottom: calc(12px + var(--safe-area-inset-bottom));
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 12px 0;
+            position: sticky;
+            top: var(--safe-area-inset-top);
+            background: linear-gradient(135deg, var(--dark-bg) 0%, var(--darker-bg) 100%);
+            z-index: 100;
+            backdrop-filter: blur(10px);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo-icon {
+            font-size: 24px;
+            color: var(--primary-color);
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 153, 0, 0.1);
+            border-radius: 50%;
+        }
+
+        .logo-text {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 8px 12px;
+            border-radius: 20px;
+            min-width: 0;
+        }
+
+        .user-name {
+            font-size: 14px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 100px;
+        }
+
+        .coins {
+            color: gold;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 14px;
+        }
+
+        .add-coins-btn {
+            background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+            color: black;
+            padding: 6px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            border: none;
+            font-weight: 700;
+            min-width: 30px;
+            cursor: pointer;
+        }
+
+        /* Main Game Area */
+        .price-card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 20px;
+            margin-bottom: 20px;
+            text-align: center;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--card-border);
+        }
+
+        .price-label {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .current-price {
+            font-size: 36px;
+            font-weight: 800;
+            color: var(--primary-color);
+            margin: 10px 0;
+            letter-spacing: -0.5px;
+        }
+
+        .price-change {
+            font-size: 14px;
+            padding: 6px 12px;
+            border-radius: 16px;
+            display: inline-block;
+            font-weight: 500;
+        }
+
+        .positive {
+            background-color: rgba(76, 175, 80, 0.2);
+            color: #4CAF50;
+        }
+
+        .negative {
+            background-color: rgba(244, 67, 54, 0.2);
+            color: #F44336;
+        }
+
+        .timer {
+            font-size: 16px;
+            padding: 12px;
+            background: rgba(22, 152, 217, 0.2);
+            border-radius: 12px;
+            margin: 20px 0;
+            font-weight: 500;
+        }
+
+        /* Prediction Buttons */
+        .prediction-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .prediction-btn {
+            padding: 24px 16px;
+            border: none;
+            border-radius: 18px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+            transition: all 0.2s ease;
+            min-height: 90px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .prediction-btn:active {
+            transform: translateY(3px) scale(0.97);
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .up-btn {
+            background: linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%);
+            color: white;
+        }
+
+        .down-btn {
+            background: linear-gradient(135deg, #F44336 0%, #C62828 100%);
+            color: white;
+        }
+
+        .btn-icon {
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+
+        .btn-text {
+            font-size: 15px;
+            font-weight: 600;
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        /* Results */
+        .result {
+            margin: 20px 0;
+            padding: 20px;
+            border-radius: 18px;
+            display: none;
+            background: var(--card-bg);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+            animation: slideIn 0.4s ease;
+            border-left: 4px solid transparent;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .win {
+            border-left-color: var(--success-color);
+        }
+
+        .lose {
+            border-left-color: var(--danger-color);
+        }
+
+        /* Statistics */
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin: 20px 0;
+        }
+
+        .stat-item {
+            background: var(--card-bg);
+            padding: 16px;
+            border-radius: 16px;
+            text-align: center;
+            border: 1px solid var(--card-border);
+        }
+
+        .stat-value {
+            font-size: 22px;
+            font-weight: 800;
+            color: var(--primary-color);
+            margin: 5px 0;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        /* Tabs Navigation */
+        .tabs {
+            display: flex;
+            background: var(--card-bg);
+            border-radius: 14px;
+            padding: 4px;
+            margin: 20px 0;
+            border: 1px solid var(--card-border);
+        }
+
+        .tab {
+            flex: 1;
+            padding: 14px;
+            text-align: center;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .tab.active {
+            background: rgba(22, 152, 217, 0.3);
+            box-shadow: 0 3px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Tab Content */
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .history {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 18px;
+            max-height: 220px;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            border: 1px solid var(--card-border);
+        }
+
+        .history::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .history::-webkit-scrollbar-thumb {
+            background: var(--primary-color);
+            border-radius: 2px;
+        }
+
+        .history h3 {
+            margin: 0 0 15px 0;
+            color: var(--primary-color);
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 13px;
+        }
+
+        .history-item:last-child {
+            border-bottom: none;
+        }
+
+        .history-correct {
+            color: var(--success-color);
+            font-weight: 600;
+        }
+
+        .history-incorrect {
+            color: var(--danger-color);
+            font-weight: 600;
+        }
+
+        .chart-container {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 18px;
+            height: 280px;
+            border: 1px solid var(--card-border);
+        }
+
+        .leaderboard {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 18px;
+            max-height: 280px;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            border: 1px solid var(--card-border);
+        }
+
+        .leaderboard-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .leaderboard-rank {
+            width: 30px;
+            text-align: center;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        .leaderboard-name {
+            flex: 1;
+            padding: 0 12px;
+            font-size: 14px;
+        }
+
+        .leaderboard-score {
+            font-weight: 700;
+            color: gold;
+        }
+
+        /* Shop Modal */
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 1000;
+            display: none;
+        }
+
+        .shop-modal {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--darker-bg);
+            border-radius: 24px 24px 0 0;
+            padding: 25px;
+            z-index: 1001;
+            display: none;
+            max-height: 85vh;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            transform: translateY(100%);
+            transition: transform 0.3s ease;
+        }
+
+        .shop-modal.open {
+            transform: translateY(0);
+        }
+
+        .shop-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--card-border);
+        }
+
+        .shop-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        .close-btn {
+            background: var(--danger-color);
+            border: none;
+            color: white;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        .payment-options {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .payment-option {
+            background: var(--card-bg);
+            padding: 16px;
+            border-radius: 14px;
+            text-align: center;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.2s ease;
+        }
+
+        .payment-option:active {
+            transform: scale(0.95);
+        }
+
+        .payment-option.selected {
+            border-color: var(--primary-color);
+            background: rgba(255, 153, 0, 0.1);
+        }
+
+        .payment-icon {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+
+        .payment-name {
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .pack-options {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin: 20px 0;
+        }
+
+        .pack-option {
+            background: var(--card-bg);
+            padding: 16px;
+            border-radius: 14px;
+            text-align: center;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.2s ease;
+        }
+
+        .pack-option:active {
+            transform: scale(0.95);
+        }
+
+        .pack-option.selected {
+            border-color: var(--primary-color);
+            background: rgba(255, 153, 0, 0.1);
+        }
+
+        .pack-amount {
+            font-size: 16px;
+            font-weight: 700;
+            color: gold;
+            margin-bottom: 5px;
+        }
+
+        .pack-price {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .buy-btn {
+            background: linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%);
+            color: white;
+            border: none;
+            padding: 18px;
+            border-radius: 14px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 20px;
+        }
+
+        .buy-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 380px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .logo-text {
+                font-size: 16px;
+            }
+            
+            .user-name {
+                max-width: 80px;
+                font-size: 12px;
+            }
+            
+            .current-price {
+                font-size: 30px;
+            }
+            
+            .prediction-btn {
+                min-height: 80px;
+                padding: 20px 12px;
+            }
+            
+            .btn-icon {
+                font-size: 20px;
+            }
+            
+            .btn-text {
+                font-size: 13px;
+            }
+            
+            .stats {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 8px;
+            }
+            
+            .stat-item {
+                padding: 12px;
+            }
+            
+            .stat-value {
+                font-size: 18px;
+            }
+            
+            .payment-options,
+            .pack-options {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (min-width: 768px) {
+            .container {
+                max-width: 500px;
+            }
+        }
+
+        @media (max-height: 700px) and (orientation: landscape) {
+            .container {
+                padding: 8px;
+            }
+            
+            .header {
+                margin-bottom: 12px;
+            }
+            
+            .price-card {
+                margin-bottom: 12px;
+                padding: 15px;
+            }
+            
+            .current-price {
+                font-size: 28px;
+            }
+            
+            .prediction-buttons {
+                margin: 12px 0;
+            }
+            
+            .prediction-btn {
+                min-height: 70px;
+                padding: 15px;
+            }
+            
+            .stats {
+                margin: 12px 0;
+            }
+        }
+
+        /* iOS Specific Styles */
+        .ios .header {
+            padding-top: calc(12px + var(--safe-area-inset-top));
+        }
+
+        /* Animation Classes */
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .shake {
+            animation: shake 0.5s ease;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        /* Reduced Motion Support */
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="logo">
+                <div class="logo-icon">₿</div>
+                <div class="logo-text">Биткоин Прогноз</div>
+            </div>
+            <div class="user-info">
+                <span class="user-name" id="user-name">Игрок</span>
+                <span class="coins" onclick="openShop()">
+                    🪙 <span id="user-coins">100</span>
+                    <button class="add-coins-btn">+</button>
+                </span>
+            </div>
+        </header>
+
+        <main>
+            <div class="price-card">
+                <div class="price-label">ТЕКУЩИЙ КУРС BTC/USD</div>
+                <div class="current-price" id="current-price">$42,150.75</div>
+                <div class="price-change positive" id="price-change">+2.35% (24ч)</div>
+            </div>
+
+            <div class="timer" id="timer">⏱️ До обновления: 45 сек</div>
+
+            <div class="prediction-buttons">
+                <button class="prediction-btn up-btn" id="up-btn" onclick="makePrediction('up')">
+                    <div class="btn-icon">📈</div>
+                    <div class="btn-text">ВЫРАСТЕТ</div>
+                </button>
+                <button class="prediction-btn down-btn" id="down-btn" onclick="makePrediction('down')">
+                    <div class="btn-icon">📉</div>
+                    <div class="btn-text">УПАДЕТ</div>
+                </button>
+            </div>
+
+            <div class="result" id="result"></div>
+
+            <div class="stats">
+                <div class="stat-item">
+                    <div class="stat-label">ПРАВИЛЬНО</div>
+                    <div class="stat-value" id="correct-guesses">0</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">НЕПРАВИЛЬНО</div>
+                    <div class="stat-value" id="incorrect-guesses">0</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">ТОЧНОСТЬ</div>
+                    <div class="stat-value" id="accuracy">0%</div>
+                </div>
+            </div>
+
+            <div class="tabs">
+                <div class="tab active" onclick="switchTab(0)">История</div>
+                <div class="tab" onclick="switchTab(1)">График</div>
+                <div class="tab" onclick="switchTab(2)">Лидеры</div>
+            </div>
+
+            <div class="tab-content active">
+                <div class="history">
+                    <h3>📊 История прогнозов</h3>
+                    <div id="history-list">
+                        <div class="history-item">
+                            <span>12:30 ▲</span>
+                            <span class="history-correct">✓ +1.2%</span>
+                            <span>+20 🪙</span>
+                        </div>
+                        <div class="history-item">
+                            <span>12:15 ▼</span>
+                            <span class="history-incorrect">✗ -0.8%</span>
+                            <span>-10 🪙</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-content">
+                <div class="chart-container">
+                    <canvas id="price-chart"></canvas>
+                </div>
+            </div>
+
+            <div class="tab-content">
+                <div class="leaderboard">
+                    <h3>🏆 Топ игроков</h3>
+                    <div id="leaderboard-list">
+                        <div class="leaderboard-item">
+                            <div class="leaderboard-rank">1</div>
+                            <div class="leaderboard-name">Сатоши Накамото</div>
+                            <div class="leaderboard-score">2500 🪙</div>
+                        </div>
+                        <div class="leaderboard-item">
+                            <div class="leaderboard-rank">2</div>
+                            <div class="leaderboard-name">Илон Маск</div>
+                            <div class="leaderboard-score">1800 🪙</div>
+                        </div>
+                        <div class="leaderboard-item">
+                            <div class="leaderboard-rank">3</div>
+                            <div class="leaderboard-name">Вы</div>
+                            <div class="leaderboard-score">100 🪙</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Shop Modal -->
+    <div class="overlay" id="overlay" onclick="closeShop()"></div>
+    <div class="shop-modal" id="shop-modal">
+        <div class="shop-header">
+            <div class="shop-title">💎 Пополнить баланс</div>
+            <button class="close-btn" onclick="closeShop()">×</button>
+        </div>
+
+        <div class="payment-options">
+            <div class="payment-option" onclick="selectPayment('card')">
+                <div class="payment-icon">💳</div>
+                <div class="payment-name">Карта</div>
+            </div>
+            <div class="payment-option" onclick="selectPayment('yoomoney')">
+                <div class="payment-icon">💰</div>
+                <div class="payment-name">ЮMoney</div>
+            </div>
+            <div class="payment-option" onclick="selectPayment('qiwi')">
+                <div class="payment-icon">🥝</div>
+                <div class="payment-name">QIWI</div>
+            </div>
+            <div class="payment-option" onclick="selectPayment('crypto')">
+                <div class="payment-icon">₿</div>
+                <div class="payment-name">Крипто</div>
+            </div>
+        </div>
+
+        <h3>🎯 Выберите пакет монет:</h3>
+        <div class="pack-options">
+            <div class="pack-option" onclick="selectPack(100, 100)">
+                <div class="pack-amount">100 🪙</div>
+                <div class="pack-price">100 ₽</div>
+            </div>
+            <div class="pack-option" onclick="selectPack(500, 450)">
+                <div class="pack-amount">500 🪙</div>
+                <div class="pack-price">450 ₽</div>
+            </div>
+            <div class="pack-option" onclick="selectPack(1000, 800)">
+                <div class="pack-amount">1000 🪙</div>
+                <div class="pack-price">800 ₽</div>
+            </div>
+            <div class="pack-option" onclick="selectPack(2000, 1500)">
+                <div class="pack-amount">2000 🪙</div>
+                <div class="pack-price">1500 ₽</div>
+            </div>
+        </div>
+
+        <button class="buy-btn" id="buy-btn" onclick="processPayment()" disabled>
+            Купить выбранный пакет
+        </button>
+    </div>
+
+    <script>
+        // Инициализация Telegram Web App
+        let tg = window.Telegram.WebApp;
+        let isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        
+        if (isIOS) {
+            document.body.classList.add('ios');
+        }
+        
+        tg.expand();
+        tg.enableClosingConfirmation();
+
+        // Элементы DOM
+        const elements = {
+            currentPrice: document.getElementById('current-price'),
+            priceChange: document.getElementById('price-change'),
+            timer: document.getElementById('timer'),
+            result: document.getElementById('result'),
+            correctGuesses: document.getElementById('correct-guesses'),
+            incorrectGuesses: document.getElementById('incorrect-guesses'),
+            accuracy: document.getElementById('accuracy'),
+            upBtn: document.getElementById('up-btn'),
+            downBtn: document.getElementById('down-btn'),
+            historyList: document.getElementById('history-list'),
+            leaderboardList: document.getElementById('leaderboard-list'),
+            userCoins: document.getElementById('user-coins'),
+            userName: document.getElementById('user-name'),
+            overlay: document.getElementById('overlay'),
+            shopModal: document.getElementById('shop-modal'),
+            buyBtn: document.getElementById('buy-btn')
+        };
+
+        // Состояние игры
+        const state = {
+            currentPrice: 42150.75,
+            nextPrice: 0,
+            timeLeft: 60,
+            correctGuesses: 0,
+            incorrectGuesses: 0,
+            canPredict: true,
+            predictionHistory: [],
+            priceHistory: [],
+            userCoins: 100,
+            currentTab: 0,
+            selectedPayment: null,
+            selectedPack: null,
+            priceChart: null
+        };
+
+        // Инициализация игры
+        function initGame() {
+            loadUserData();
+            initPriceChart();
+            setupEventListeners();
+            startGameTimer();
+            
+            if (tg.initDataUnsafe?.user) {
+                const user = tg.initDataUnsafe.user;
+                elements.userName.textContent = user.first_name || 'Игрок';
+                if (user.username) {
+                    elements.userName.textContent += ` (@${user.username})`;
+                }
+            }
+        }
+
+        // Загрузка данных пользователя
+        function loadUserData() {
+            const savedData = localStorage.getItem('bitcoin_prediction_user');
+            if (savedData) {
+                const userData = JSON.parse(savedData);
+                state.correctGuesses = userData.correctGuesses || 0;
+                state.incorrectGuesses = userData.incorrectGuesses || 0;
+                state.predictionHistory = userData.predictionHistory || [];
+                state.userCoins = userData.userCoins || 100;
+                
+                updateUI();
+            }
+        }
+
+        // Сохранение данных пользователя
+        function saveUserData() {
+            const userData = {
+                correctGuesses: state.correctGuesses,
+                incorrectGuesses: state.incorrectGuesses,
+                predictionHistory: state.predictionHistory,
+                userCoins: state.userCoins
+            };
+            localStorage.setItem('bitcoin_prediction_user', JSON.stringify(userData));
+        }
+
+        // Инициализация графика цен
+        function initPriceChart() {
+            const ctx = document.getElementById('price-chart').getContext('2d');
+            const now = Date.now();
+            
+            // Генерация демо-данных
+            for (let i = 24; i >= 0; i--) {
+                const time = now - (i * 3600000);
+                const price = 40000 + (Math.random() * 5000);
+                state.priceHistory.push({ time, price });
+            }
+            
+            state.priceChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: state.priceHistory.map((_, i) => {
+                        const date = new Date(now - (24 - i) * 3600000);
+                        return date.getHours() + ':00';
+                    }),
+                    datasets: [{
+                        label: 'BTC/USD',
+                        data: state.priceHistory.map(item => item.price),
+                        borderColor: '#ff9900',
+                        backgroundColor: 'rgba(255, 153, 0, 0.1)',
+                        borderWidth: 3,
+                        pointRadius: 0,
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        title: {
+                            display: true,
+                            text: 'Изменение цены за 24 часа',
+                            color: 'white',
+                            font: { size: 14 }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: { color: 'rgba(255, 255, 255, 0.7)', maxRotation: 0 },
+                            grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                        },
+                        y: {
+                            ticks: { color: 'rgba(255, 255, 255, 0.7)' },
+                            grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Настройка обработчиков событий
+        function setupEventListeners() {
+            // Swipe для вкладок
+            const tabsContainer = document.querySelector('.tabs');
+            let startX = 0;
+            
+            tabsContainer.addEventListener('touchstart', (e) => {
+                startX = e.touches[0].clientX;
+            }, { passive: true });
+            
+            tabsContainer.addEventListener('touchend', (e) => {
+                const endX = e.changedTouches[0].clientX;
+                const diffX = endX - startX;
+                
+                if (Math.abs(diffX) > 50) {
+                    if (diffX > 0 && state.currentTab > 0) {
+                        switchTab(state.currentTab - 1);
+                    } else if (diffX < 0 && state.currentTab < 2) {
+                        switchTab(state.currentTab + 1);
+                    }
+                }
+            }, { passive: true });
+            
+            // Оптимизация для touch
+            document.querySelectorAll('button').forEach(btn => {
+                btn.addEventListener('touchstart', function() {
+                    this.style.opacity = '0.8';
+                }, { passive: true });
+                
+                btn.addEventListener('touchend', function() {
+                    this.style.opacity = '';
+                }, { passive: true });
+            });
+        }
+
+        // Таймер игры
+        function startGameTimer() {
+            state.timeLeft = 60;
+            updateTimer();
+            
+            const timer = setInterval(() => {
+                state.timeLeft--;
+                updateTimer();
+                
+                if (state.timeLeft <= 0) {
+                    clearInterval(timer);
+                    endRound();
+                }
+            }, 1000);
+        }
+
+        function updateTimer() {
+            elements.timer.textContent = `⏱️ До обновления: ${state.timeLeft} сек`;
+        }
+
+        // Прогноз игрока
+        function makePrediction(direction) {
+            if (!state.canPredict || state.userCoins <= 0) return;
+            
+            state.canPredict = false;
+            elements.upBtn.disabled = true;
+            elements.downBtn.disabled = true;
+            
+            // Генерация новой цены
+            const changePercent = (Math.random() - 0.5) * 4;
+            state.nextPrice = state.currentPrice * (1 + changePercent / 100);
+            
+            const actualDirection = state.nextPrice > state.currentPrice ? 'up' : 'down';
+            const isCorrect = direction === actualDirection;
+            
+            // Обновление счета
+            if (isCorrect) {
+                state.correctGuesses++;
+                state.userCoins += 20;
+            } else {
+                state.incorrectGuesses++;
+                state.userCoins -= 10;
+            }
+            
+            // Сохранение в историю
+            const prediction = {
+                time: Date.now(),
+                userPrediction: direction,
+                actualDirection,
+                isCorrect,
+                oldPrice: state.currentPrice,
+                newPrice: state.nextPrice,
+                reward: isCorrect ? 20 : -10
+            };
+            
+            state.predictionHistory.unshift(prediction);
+            if (state.predictionHistory.length > 10) {
+                state.predictionHistory.pop();
+            }
+            
+            updateUI();
+            saveUserData();
+        }
+
+        function endRound() {
+            showResult();
+            setTimeout(() => {
+                state.currentPrice = state.nextPrice;
+                state.canPredict = true;
+                elements.upBtn.disabled = false;
+                elements.downBtn.disabled = false;
+                elements.result.style.display = 'none';
+                startGameTimer();
+            }, 3000);
+        }
+
+        function showResult() {
+            const lastPrediction = state.predictionHistory[0];
+            if (!lastPrediction) return;
+            
+            const change = ((lastPrediction.newPrice - lastPrediction.oldPrice) / lastPrediction.oldPrice * 100).toFixed(2);
+            const changeText = change >= 0 ? `+${change}%` : `${change}%`;
+            
+            elements.result.className = `result ${lastPrediction.isCorrect ? 'win' : 'lose'}`;
+            elements.result.innerHTML = `
+                <h3>${lastPrediction.isCorrect ? '🎉 Правильно!' : '❌ Неправильно'}</h3>
+                <p>Ваш прогноз: <strong>${lastPrediction.userPrediction === 'up' ? 'рост' : 'падение'}</strong></p>
+                <p>Результат: <strong>${lastPrediction.actualDirection === 'up' ? 'рост' : 'падение'} (${changeText})</strong></p>
+                <p>Новая цена: <strong>$${lastPrediction.newPrice.toFixed(2)}</strong></p>
+                <p>${lastPrediction.reward > 0 ? 'Выигрыш' : 'Проигрыш'}: <strong>${Math.abs(lastPrediction.reward)} 🪙</strong></p>
+            `;
+            elements.result.style.display = 'block';
+        }
+
+        // Обновление интерфейса
+        function updateUI() {
+            elements.correctGuesses.textContent = state.correctGuesses;
+            elements.incorrectGuesses.textContent = state.incorrectGuesses;
+            elements.userCoins.textContent = state.userCoins;
+            
+            const total = state.correctGuesses + state.incorrectGuesses;
+            const accuracy = total > 0 ? Math.round((state.correctGuesses / total) * 100) : 0;
+            elements.accuracy.textContent = `${accuracy}%`;
+            
+            updateHistory();
+        }
+
+        function updateHistory() {
+            elements.historyList.innerHTML = state.predictionHistory.map(pred => {
+                const date = new Date(pred.time);
+                const timeString = date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                const change = ((pred.newPrice - pred.oldPrice) / pred.oldPrice * 100).toFixed(1);
+                const changeText = change >= 0 ? `+${change}%` : `${change}%`;
+                
+                return `
+                    <div class="history-item">
+                        <span>${timeString} ${pred.userPrediction === 'up' ? '▲' : '▼'}</span>
+                        <span class="${pred.isCorrect ? 'history-correct' : 'history-incorrect'}">
+                            ${pred.isCorrect ? '✓' : '✗'} ${changeText}
+                        </span>
+                        <span>${pred.reward > 0 ? '+' : ''}${pred.reward} 🪙</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Переключение вкладок
+        function switchTab(tabIndex) {
+            document.querySelectorAll('.tab').forEach((tab, index) => {
+                tab.classList.toggle('active', index === tabIndex);
+            });
+            
+            document.querySelectorAll('.tab-content').forEach((content, index) => {
+                content.classList.toggle('active', index === tabIndex);
+            });
+            
+            state.currentTab = tabIndex;
+        }
+
+        // Магазин
+        function openShop() {
+            elements.overlay.style.display = 'block';
+            elements.shopModal.style.display = 'block';
+            setTimeout(() => elements.shopModal.classList.add('open'), 10);
+        }
+
+        function closeShop() {
+            elements.shopModal.classList.remove('open');
+            setTimeout(() => {
+                elements.shopModal.style.display = 'none';
+                elements.overlay.style.display = 'none';
+            }, 300);
+        }
+
+        function selectPayment(method) {
+            state.selectedPayment = method;
+            document.querySelectorAll('.payment-option').forEach(opt => {
+                opt.classList.toggle('selected', opt.onclick.toString().includes(`'${method}'`));
+            });
+            checkBuyButton();
+        }
+
+        function selectPack(amount, price) {
+            state.selectedPack = { amount, price };
+            document.querySelectorAll('.pack-option').forEach(opt => {
+                opt.classList.toggle('selected', opt.onclick.toString().includes(`${amount}, ${price}`));
+            });
+            checkBuyButton();
+        }
+
+        function checkBuyButton() {
+            elements.buyBtn.disabled = !(state.selectedPayment && state.selectedPack);
+        }
+
+        function processPayment() {
+            if (!state.selectedPayment || !state.selectedPack) return;
+            
+            // Имитация платежа
+            elements.buyBtn.textContent = 'Обработка...';
+            elements.buyBtn.disabled = true;
+            
+            setTimeout(() => {
+                state.userCoins += state.selectedPack.amount;
+                elements.userCoins.textContent = state.userCoins;
+                elements.buyBtn.textContent = 'Успешно!';
+                
+                setTimeout(() => {
+                    closeShop();
+                    elements.buyBtn.textContent = 'Купить выбранный пакет';
+                    saveUserData();
+                }, 1000);
+            }, 2000);
+        }
+
+        // Запуск игры
+        document.addEventListener('DOMContentLoaded', initGame);
+        
+        // Предотвращение масштабирования на двойной тап
+        document.addEventListener('dblclick', (e) => e.preventDefault(), { passive: false });
+    </script>
+</body>
+</html>
