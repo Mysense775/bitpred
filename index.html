@@ -1,0 +1,1241 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Угадай курс Биткоина</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-color: #ff9900;
+            --secondary-color: #1698d9;
+            --success-color: #4CAF50;
+            --danger-color: #F44336;
+            --dark-color: #212121;
+            --light-color: #f5f5f5;
+            --gray-color: #9e9e9e;
+        }
+        
+        body {
+            font-family: 'Roboto', 'Arial', sans-serif;
+            text-align: center;
+            padding: 0;
+            margin: 0;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: white;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .logo-icon {
+            font-size: 28px;
+            color: var(--primary-color);
+        }
+        
+        h1 {
+            font-size: 22px;
+            margin: 0;
+            color: var(--primary-color);
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 8px 15px;
+            border-radius: 20px;
+        }
+        
+        .coins {
+            color: gold;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        .shop-container {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.95);
+            padding: 25px;
+            border-radius: 20px;
+            z-index: 1000;
+            width: 90%;
+            max-width: 400px;
+            display: none;
+            box-shadow: 0 0 30px rgba(255, 153, 0, 0.5);
+            border: 2px solid var(--primary-color);
+        }
+        
+        .shop-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .close-shop {
+            background: var(--danger-color);
+            border: none;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        
+        .payment-methods {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .payment-method {
+            background: linear-gradient(135deg, #2c3e50 0%, #4ca1af 100%);
+            padding: 15px;
+            border-radius: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.3s;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .payment-method:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .payment-icon {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+        
+        .payment-name {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .payment-desc {
+            font-size: 14px;
+            opacity: 0.8;
+        }
+        
+        .coin-packs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        
+        .coin-pack {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 1px solid transparent;
+        }
+        
+        .coin-pack:hover {
+            border-color: var(--primary-color);
+            background: rgba(255, 153, 0, 0.1);
+        }
+        
+        .coin-pack.selected {
+            border-color: var(--primary-color);
+            background: rgba(255, 153, 0, 0.2);
+            transform: scale(1.05);
+        }
+        
+        .coin-amount {
+            font-size: 18px;
+            font-weight: bold;
+            color: gold;
+        }
+        
+        .coin-price {
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        
+        .buy-button {
+            background: linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%);
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            transition: transform 0.3s;
+        }
+        
+        .buy-button:disabled {
+            background: var(--gray-color);
+            cursor: not-allowed;
+        }
+        
+        .buy-button:hover:not(:disabled) {
+            transform: translateY(-2px);
+        }
+        
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 999;
+            display: none;
+        }
+        
+        .payment-status {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 10px;
+            display: none;
+        }
+        
+        .payment-success {
+            background: rgba(76, 175, 80, 0.2);
+            color: #4CAF50;
+        }
+        
+        .payment-error {
+            background: rgba(244, 67, 54, 0.2);
+            color: #F44336;
+        }
+        
+        .price-display {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 15px;
+            margin: 20px 0;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .current-price {
+            font-size: 28px;
+            font-weight: bold;
+            margin: 10px 0;
+            color: var(--primary-color);
+        }
+        
+        .price-change {
+            font-size: 16px;
+            padding: 5px 10px;
+            border-radius: 20px;
+            display: inline-block;
+        }
+        
+        .positive {
+            background-color: rgba(76, 175, 80, 0.2);
+            color: #4CAF50;
+        }
+        
+        .negative {
+            background-color: rgba(244, 67, 54, 0.2);
+            color: #F44336;
+        }
+        
+        .timer {
+            font-size: 18px;
+            margin: 15px 0;
+            padding: 10px;
+            background: rgba(22, 152, 217, 0.2);
+            border-radius: 10px;
+        }
+        
+        .buttons {
+            display: flex;
+            justify-content: space-around;
+            margin: 20px 0;
+            gap: 15px;
+        }
+        
+        button {
+            padding: 18px 25px;
+            border: none;
+            border-radius: 15px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            flex: 1;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        }
+        
+        #up-btn {
+            background: linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%);
+            color: white;
+        }
+        
+        #down-btn {
+            background: linear-gradient(135deg, #F44336 0%, #C62828 100%);
+            color: white;
+        }
+        
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+        
+        button:hover:not(:disabled) {
+            transform: translateY(-3px);
+        }
+        
+        .result {
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 15px;
+            display: none;
+            background: rgba(0, 0, 0, 0.3);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .win {
+            border-left: 5px solid var(--success-color);
+        }
+        
+        .lose {
+            border-left: 5px solid var(--danger-color);
+        }
+        
+        .score {
+            margin-top: 20px;
+            font-size: 18px;
+            display: flex;
+            justify-content: space-around;
+        }
+        
+        .score-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 15px;
+            min-width: 100px;
+        }
+        
+        .score-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        
+        .history {
+            margin-top: 30px;
+            text-align: left;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            border-radius: 15px;
+            max-height: 200px;
+            overflow-y: auto;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .history h3 {
+            margin-top: 0;
+            color: var(--primary-color);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 10px;
+        }
+        
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .history-correct {
+            color: var(--success-color);
+        }
+        
+        .history-incorrect {
+            color: var(--danger-color);
+        }
+        
+        .chart-container {
+            margin-top: 30px;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .tabs {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 20px;
+        }
+        
+        .tab {
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.3);
+            flex: 1;
+            margin: 0 5px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .tab.active {
+            background: rgba(22, 152, 217, 0.3);
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .leaderboard {
+            margin-top: 20px;
+            text-align: left;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            border-radius: 15px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .leaderboard-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .leaderboard-rank {
+            width: 30px;
+            text-align: center;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        
+        .leaderboard-name {
+            flex: 1;
+            padding: 0 10px;
+        }
+        
+        .leaderboard-score {
+            font-weight: bold;
+        }
+        
+        .add-coins-btn {
+            background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+            color: black;
+            padding: 8px 12px;
+            border-radius: 15px;
+            font-size: 12px;
+            margin-left: 8px;
+            cursor: pointer;
+            border: none;
+            font-weight: bold;
+        }
+        
+        @media (max-width: 480px) {
+            .buttons {
+                flex-direction: column;
+            }
+            
+            .score {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .score-item {
+                width: 100%;
+                box-sizing: border-box;
+            }
+            
+            .coin-packs {
+                grid-template-columns: 1fr;
+            }
+            
+            .payment-methods {
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <div class="logo-icon">₿</div>
+                <h1>Биткоин Прогноз</h1>
+            </div>
+            <div class="user-info">
+                <span id="user-name">Игрок</span>
+                <span class="coins" onclick="openShop()">
+                    🪙 <span id="user-coins">100</span>
+                    <button class="add-coins-btn">+</button>
+                </span>
+            </div>
+        </header>
+        
+        <!-- Магазин -->
+        <div class="overlay" id="overlay" onclick="closeShop()"></div>
+        <div class="shop-container" id="shop-container">
+            <div class="shop-header">
+                <h2>Пополнить баланс</h2>
+                <button class="close-shop" onclick="closeShop()">×</button>
+            </div>
+            
+            <div class="payment-methods">
+                <div class="payment-method" onclick="selectPaymentMethod('card')">
+                    <div class="payment-icon">💳</div>
+                    <div class="payment-name">Банковская карта</div>
+                    <div class="payment-desc">Visa, Mastercard, МИР</div>
+                </div>
+                
+                <div class="payment-method" onclick="selectPaymentMethod('yoomoney')">
+                    <div class="payment-icon">💰</div>
+                    <div class="payment-name">ЮMoney</div>
+                    <div class="payment-desc">Кошелек Яндекс.Денег</div>
+                </div>
+                
+                <div class="payment-method" onclick="selectPaymentMethod('qiwi')">
+                    <div class="payment-icon">🥝</div>
+                    <div class="payment-name">QIWI</div>
+                    <div class="payment-desc">Кошелек QIWI</div>
+                </div>
+                
+                <div class="payment-method" onclick="selectPaymentMethod('crypto')">
+                    <div class="payment-icon">₿</div>
+                    <div class="payment-name">Криптовалюта</div>
+                    <div class="payment-desc">BTC, ETH, USDT</div>
+                </div>
+            </div>
+            
+            <h3>Выберите пакет монет:</h3>
+            <div class="coin-packs">
+                <div class="coin-pack" onclick="selectCoinPack(100, 100)">
+                    <div class="coin-amount">100 🪙</div>
+                    <div class="coin-price">100 ₽</div>
+                </div>
+                <div class="coin-pack" onclick="selectCoinPack(500, 450)">
+                    <div class="coin-amount">500 🪙</div>
+                    <div class="coin-price">450 ₽</div>
+                </div>
+                <div class="coin-pack" onclick="selectCoinPack(1000, 800)">
+                    <div class="coin-amount">1000 🪙</div>
+                    <div class="coin-price">800 ₽</div>
+                </div>
+                <div class="coin-pack" onclick="selectCoinPack(2000, 1500)">
+                    <div class="coin-amount">2000 🪙</div>
+                    <div class="coin-price">1500 ₽</div>
+                </div>
+            </div>
+            
+            <button class="buy-button" id="buy-button" onclick="processPayment()" disabled>
+                Купить <span id="selected-amount">0</span> монет за <span id="selected-price">0</span> ₽
+            </button>
+            
+            <div class="payment-status" id="payment-status"></div>
+        </div>
+        
+        <div class="price-display">
+            <div>Текущий курс BTC/USD</div>
+            <div class="current-price" id="current-price">Загрузка...</div>
+            <div class="price-change" id="price-change">+0.00% (24ч)</div>
+        </div>
+        
+        <div class="timer" id="timer">До обновления: 60 сек</div>
+        
+        <div class="buttons">
+            <button id="up-btn" onclick="makePrediction('up')">▲ Вырастет</button>
+            <button id="down-btn" onclick="makePrediction('down')">▼ Упадет</button>
+        </div>
+        
+        <div class="result" id="result"></div>
+        
+        <div class="score">
+            <div class="score-item">
+                <div>Правильно</div>
+                <div class="score-value" id="correct-guesses">0</div>
+            </div>
+            <div class="score-item">
+                <div>Неправильно</div>
+                <div class="score-value" id="incorrect-guesses">0</div>
+            </div>
+            <div class="score-item">
+                <div>Точность</div>
+                <div class="score-value" id="accuracy">0%</div>
+            </div>
+        </div>
+        
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab(0)">История</div>
+            <div class="tab" onclick="switchTab(1)">График</div>
+            <div class="tab" onclick="switchTab(2)">Лидеры</div>
+        </div>
+        
+        <div class="tab-content active">
+            <div class="history">
+                <h3>История прогнозов</h3>
+                <div id="history-list"></div>
+            </div>
+        </div>
+        
+        <div class="tab-content">
+            <div class="chart-container">
+                <canvas id="price-chart"></canvas>
+            </div>
+        </div>
+        
+        <div class="tab-content">
+            <div class="leaderboard">
+                <h3>Таблица лидеров</h3>
+                <div id="leaderboard-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Инициализация Telegram Web App
+        let tg = window.Telegram.WebApp;
+        tg.expand();
+        tg.enableClosingConfirmation();
+        
+        // Элементы DOM
+        const currentPriceElement = document.getElementById('current-price');
+        const priceChangeElement = document.getElementById('price-change');
+        const timerElement = document.getElementById('timer');
+        const resultElement = document.getElementById('result');
+        const correctGuessesElement = document.getElementById('correct-guesses');
+        const incorrectGuessesElement = document.getElementById('incorrect-guesses');
+        const accuracyElement = document.getElementById('accuracy');
+        const upButton = document.getElementById('up-btn');
+        const downButton = document.getElementById('down-btn');
+        const historyListElement = document.getElementById('history-list');
+        const leaderboardListElement = document.getElementById('leaderboard-list');
+        const userCoinsElement = document.getElementById('user-coins');
+        const userNameElement = document.getElementById('user-name');
+        const shopContainer = document.getElementById('shop-container');
+        const overlay = document.getElementById('overlay');
+        const buyButton = document.getElementById('buy-button');
+        const selectedAmount = document.getElementById('selected-amount');
+        const selectedPrice = document.getElementById('selected-price');
+        const paymentStatus = document.getElementById('payment-status');
+        
+        // Переменные игры
+        let currentPrice = 0;
+        let nextPrice = 0;
+        let timeLeft = 60;
+        let timerInterval;
+        let correctGuesses = 0;
+        let incorrectGuesses = 0;
+        let canPredict = true;
+        let predictionHistory = [];
+        let priceHistory = [];
+        let userCoins = 100;
+        let priceChart = null;
+        
+        // Переменные для платежей
+        let selectedPaymentMethod = null;
+        let selectedCoinAmount = 0;
+        let selectedCoinPrice = 0;
+        
+        // Инициализация игры
+        async function initGame() {
+            // Загружаем данные пользователя
+            loadUserData();
+            
+            // Загружаем историю цен
+            await loadPriceHistory();
+            
+            // Загружаем текущую цену
+            await fetchBitcoinPrice();
+            
+            // Запускаем таймер
+            startTimer();
+            
+            // Загружаем таблицу лидеров
+            loadLeaderboard();
+        }
+        
+        // Открыть магазин
+        function openShop() {
+            shopContainer.style.display = 'block';
+            overlay.style.display = 'block';
+            document.body.style.overflow = 'hidden';
+            resetPaymentSelection();
+        }
+        
+        // Закрыть магазин
+        function closeShop() {
+            shopContainer.style.display = 'none';
+            overlay.style.display = 'none';
+            document.body.style.overflow = 'auto';
+            resetPaymentSelection();
+        }
+        
+        // Сброс выбора платежа
+        function resetPaymentSelection() {
+            selectedPaymentMethod = null;
+            selectedCoinAmount = 0;
+            selectedCoinPrice = 0;
+            
+            // Сброс стилей
+            document.querySelectorAll('.payment-method').forEach(method => {
+                method.style.borderColor = 'transparent';
+                method.style.background = 'linear-gradient(135deg, #2c3e50 0%, #4ca1af 100%)';
+            });
+            
+            document.querySelectorAll('.coin-pack').forEach(pack => {
+                pack.classList.remove('selected');
+            });
+            
+            buyButton.disabled = true;
+            selectedAmount.textContent = '0';
+            selectedPrice.textContent = '0';
+            paymentStatus.style.display = 'none';
+        }
+        
+        // Выбор метода оплаты
+        function selectPaymentMethod(method) {
+            selectedPaymentMethod = method;
+            
+            // Сброс стилей у всех методов
+            document.querySelectorAll('.payment-method').forEach(m => {
+                m.style.borderColor = 'transparent';
+                m.style.background = 'linear-gradient(135deg, #2c3e50 0%, #4ca1af 100%)';
+            });
+            
+            // Подсветка выбранного метода
+            const selectedElement = event.currentTarget;
+            selectedElement.style.borderColor = 'var(--primary-color)';
+            selectedElement.style.background = 'linear-gradient(135deg, #3a506b 0%, #5bc0be 100%)';
+            
+            checkPaymentReady();
+        }
+        
+        // Выбор пакета монет
+        function selectCoinPack(amount, price) {
+            selectedCoinAmount = amount;
+            selectedCoinPrice = price;
+            
+            // Сброс стилей у всех пакетов
+            document.querySelectorAll('.coin-pack').forEach(pack => {
+                pack.classList.remove('selected');
+            });
+            
+            // Подсветка выбранного пакета
+            event.currentTarget.classList.add('selected');
+            
+            // Обновление текста кнопки
+            selectedAmount.textContent = amount;
+            selectedPrice.textContent = price;
+            
+            checkPaymentReady();
+        }
+        
+        // Проверка готовности к оплате
+        function checkPaymentReady() {
+            if (selectedPaymentMethod && selectedCoinAmount > 0) {
+                buyButton.disabled = false;
+            } else {
+                buyButton.disabled = true;
+            }
+        }
+        
+        // Обработка платежа
+        function processPayment() {
+            if (!selectedPaymentMethod || selectedCoinAmount === 0) {
+                showPaymentStatus('error', 'Выберите метод оплаты и пакет монет');
+                return;
+            }
+            
+            // Блокируем кнопку во время обработки
+            buyButton.disabled = true;
+            buyButton.textContent = 'Обработка...';
+            
+            // В реальном приложении здесь должен быть вызов API платежной системы
+            // Для демонстрации используем имитацию
+            
+            simulatePaymentProcessing();
+        }
+        
+        // Имитация обработки платежа
+        function simulatePaymentProcessing() {
+            showPaymentStatus('processing', 'Обработка платежа...');
+            
+            // Имитация задержки платежа
+            setTimeout(() => {
+                // 80% шанс успешного платежа, 20% - ошибка
+                const isSuccess = Math.random() > 0.2;
+                
+                if (isSuccess) {
+                    // Успешный платеж
+                    userCoins += selectedCoinAmount;
+                    userCoinsElement.textContent = userCoins;
+                    saveUserData();
+                    
+                    showPaymentStatus('success', `Успешно! Получено ${selectedCoinAmount} монет`);
+                    buyButton.textContent = 'Успешно!';
+                    
+                    // Автоматическое закрытие через 2 секунды
+                    setTimeout(() => {
+                        closeShop();
+                    }, 2000);
+                } else {
+                    // Ошибка платежа
+                    showPaymentStatus('error', 'Ошибка оплаты. Попробуйте еще раз');
+                    buyButton.textContent = 'Купить';
+                    buyButton.disabled = false;
+                }
+            }, 2000);
+        }
+        
+        // Показать статус платежа
+        function showPaymentStatus(type, message) {
+            paymentStatus.textContent = message;
+            paymentStatus.className = 'payment-status';
+            
+            if (type === 'success') {
+                paymentStatus.classList.add('payment-success');
+            } else if (type === 'error') {
+                paymentStatus.classList.add('payment-error');
+            }
+            
+            paymentStatus.style.display = 'block';
+        }
+        
+        // Загрузка данных пользователя
+        function loadUserData() {
+            const savedData = localStorage.getItem('bitcoin_prediction_user');
+            if (savedData) {
+                const userData = JSON.parse(savedData);
+                correctGuesses = userData.correctGuesses || 0;
+                incorrectGuesses = userData.incorrectGuesses || 0;
+                predictionHistory = userData.predictionHistory || [];
+                userCoins = userData.userCoins || 100;
+                
+                correctGuessesElement.textContent = correctGuesses;
+                incorrectGuessesElement.textContent = incorrectGuesses;
+                userCoinsElement.textContent = userCoins;
+                updateAccuracy();
+                renderHistory();
+            }
+            
+            // Установка имени пользователя
+            if (tg.initDataUnsafe?.user) {
+                const user = tg.initDataUnsafe.user;
+                userNameElement.textContent = user.first_name || 'Игрок';
+                if (user.username) {
+                    userNameElement.textContent += ` (@${user.username})`;
+                }
+            }
+        }
+        
+        // Сохранение данных пользователя
+        function saveUserData() {
+            const userData = {
+                correctGuesses,
+                incorrectGuesses,
+                predictionHistory,
+                userCoins
+            };
+            localStorage.setItem('bitcoin_prediction_user', JSON.stringify(userData));
+        }
+        
+        // Загрузка истории цен
+        async function loadPriceHistory() {
+            try {
+                // В реальном приложении здесь должен быть запрос к API для получения истории цен
+                // Для демонстрации генерируем случайные данные
+                const now = Date.now();
+                for (let i = 24; i >= 0; i--) {
+                    const time = now - (i * 3600000); // Каждый час
+                    const price = 30000 + (Math.random() * 10000); // Случайная цена
+                    priceHistory.push({ time, price });
+                }
+                
+                // Инициализируем график
+                initChart();
+            } catch (error) {
+                console.error('Ошибка загрузки истории цен:', error);
+            }
+        }
+        
+        // Инициализация графика
+        function initChart() {
+            const ctx = document.getElementById('price-chart').getContext('2d');
+            
+            // Подготовка данных для графика
+            const labels = priceHistory.map(item => {
+                const date = new Date(item.time);
+                return date.getHours() + ':00';
+            });
+            
+            const data = priceHistory.map(item => item.price);
+            
+            // Создание графика
+            priceChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'BTC/USD',
+                        data: data,
+                        borderColor: '#ff9900',
+                        backgroundColor: 'rgba(255, 153, 0, 0.1)',
+                        borderWidth: 2,
+                        pointRadius: 2,
+                        fill: true,
+                        tension: 0.3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        title: {
+                            display: true,
+                            text: 'Изменение цены за последние 24 часа',
+                            color: 'white'
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: {
+                                color: 'rgba(255, 255, 255, 0.7)'
+                            },
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            }
+                        },
+                        y: {
+                            ticks: {
+                                color: 'rgba(255, 255, 255, 0.7)'
+                            },
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Получение текущей цены Bitcoin
+        async function fetchBitcoinPrice() {
+            try {
+                // В реальном приложении здесь должен быть запрос к API
+                // Для демонстрации используем случайные значения
+                const changePercent = (Math.random() - 0.5) * 10; // от -5% до +5%
+                currentPrice = currentPrice || 30000 + (Math.random() * 10000);
+                currentPrice = currentPrice * (1 + changePercent / 100);
+                
+                currentPriceElement.textContent = formatPrice(currentPrice);
+                
+                // Обновляем изменение цены
+                const changeElement = priceChangeElement;
+                changeElement.textContent = `${changePercent >= 0 ? '+' : ''}${changePercent.toFixed(2)}% (24ч)`;
+                changeElement.className = `price-change ${changePercent >= 0 ? 'positive' : 'negative'}`;
+                
+                return currentPrice;
+            } catch (error) {
+                console.error('Ошибка получения цены:', error);
+                // Возвращаем случайную цену в случае ошибка
+                currentPrice = 30000 + (Math.random() * 10000);
+                currentPriceElement.textContent = formatPrice(currentPrice);
+                return currentPrice;
+            }
+        }
+        
+        // Генерация "следующей" цены
+        function generateNextPrice() {
+            // В реальном приложении нужно получать реальные данные через минуту
+            const changePercent = (Math.random() - 0.5) * 5; // от -2.5% до +2.5%
+            nextPrice = currentPrice * (1 + changePercent / 100);
+        }
+        
+        // Запуск таймера
+        function startTimer() {
+            clearInterval(timerInterval);
+            timeLeft = 60;
+            
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                timerElement.textContent = `До обновления: ${timeLeft} сек`;
+                
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    canPredict = false;
+                    upButton.disabled = true;
+                    downButton.disabled = true;
+                    timerElement.textContent = 'Обновление курса...';
+                    
+                    // Через секунду показываем результат и начинаем новый раунд
+                    setTimeout(() => {
+                        showResult();
+                        setTimeout(startNewRound, 3000);
+                    }, 1000);
+                }
+            }, 1000);
+        }
+        
+        // Пользователь делает прогноз
+        function makePrediction(direction) {
+            if (!canPredict) return;
+            if (userCoins <= 0) {
+                tg.showPopup({
+                    title: 'Недостаточно монет',
+                    message: 'Пополните баланс, чтобы сделать прогноз',
+                    buttons: [{id: 'ok', type: 'default', text: 'OK'}]
+                });
+                return;
+            }
+            
+            canPredict = false;
+            upButton.disabled = true;
+            downButton.disabled = true;
+            
+            // Сохраняем прогноз пользователя
+            const userPrediction = direction;
+            
+            // В реальном приложении здесь нужно ждать реального изменения цены
+            // А пока просто используем сгенерированную цену
+            generateNextPrice();
+            
+            // Определяем фактическое направление
+            const actualDirection = nextPrice > currentPrice ? 'up' : 'down';
+            
+            // Проверяем, угадал ли пользователь
+            const isCorrect = userPrediction === actualDirection;
+            
+            // Обновляем счет
+            if (isCorrect) {
+                correctGuesses++;
+                correctGuessesElement.textContent = correctGuesses;
+                userCoins += 20; // Награда за правильный прогноз
+            } else {
+                incorrectGuesses++;
+                incorrectGuessesElement.textContent = incorrectGuesses;
+                userCoins -= 10; // Штраф за неправильный прогноз
+            }
+            
+            userCoinsElement.textContent = userCoins;
+            updateAccuracy();
+            
+            // Сохраняем прогноз в историю
+            const prediction = {
+                time: Date.now(),
+                userPrediction,
+                actualDirection,
+                isCorrect,
+                oldPrice: currentPrice,
+                newPrice: nextPrice,
+                reward: isCorrect ? 20 : -10
+            };
+            
+            predictionHistory.unshift(prediction);
+            if (predictionHistory.length > 10) {
+                predictionHistory.pop();
+            }
+            
+            renderHistory();
+            
+            // Сохраняем данные для показа результата
+            window.lastRoundData = prediction;
+            
+            // Сохраняем данные пользователя
+            saveUserData();
+        }
+        
+        // Обновление точности прогнозов
+        function updateAccuracy() {
+            const total = correctGuesses + incorrectGuesses;
+            const accuracy = total > 0 ? Math.round((correctGuesses / total) * 100) : 0;
+            accuracyElement.textContent = `${accuracy}%`;
+        }
+        
+        // Отображение истории прогнозов
+        function renderHistory() {
+            historyListElement.innerHTML = '';
+            
+            if (predictionHistory.length === 0) {
+                historyListElement.innerHTML = '<p>Пока нет истории прогнозов</p>';
+                return;
+            }
+            
+            predictionHistory.forEach(prediction => {
+                const item = document.createElement('div');
+                item.className = 'history-item';
+                
+                const date = new Date(prediction.time);
+                const timeString = date.toLocaleTimeString();
+                
+                const change = ((prediction.newPrice - prediction.oldPrice) / prediction.oldPrice * 100).toFixed(2);
+                const changeText = change >= 0 ? `+${change}%` : `${change}%`;
+                
+                item.innerHTML = `
+                    <div>${timeString}</div>
+                    <div>${prediction.userPrediction === 'up' ? '▲' : '▼'}</div>
+                    <div class="${prediction.isCorrect ? 'history-correct' : 'history-incorrect'}">
+                        ${prediction.isCorrect ? '✓' : '✗'} ${changeText}
+                    </div>
+                    <div>${prediction.reward > 0 ? '+' : ''}${prediction.reward} 🪙</div>
+                `;
+                
+                historyListElement.appendChild(item);
+            });
+        }
+        
+        // Показать результат раунда
+        function showResult() {
+            const { userPrediction, actualDirection, isCorrect, oldPrice, newPrice, reward } = window.lastRoundData;
+            
+            resultElement.className = isCorrect ? 'result win' : 'result lose';
+            
+            const change = ((newPrice - oldPrice) / oldPrice * 100).toFixed(2);
+            const changeText = change >= 0 ? `+${change}%` : `${change}%`;
+            
+            resultElement.innerHTML = `
+                <h2>${isCorrect ? '✅ Правильно!' : '❌ Неправильно'}</h2>
+                <p>Вы прогнозировали: <strong>${userPrediction === 'up' ? 'рост' : 'падение'}</strong></p>
+                <p>Фактически: <strong>${actualDirection === 'up' ? 'рост' : 'падение'} (${changeText})</strong></p>
+                <p>Новая цена: <strong>${formatPrice(newPrice)}</strong></p>
+                <p>${reward > 0 ? 'Получено' : 'Потеряно'}: <strong>${Math.abs(reward)} 🪙</strong></p>
+            `;
+            
+            resultElement.style.display = 'block';
+        }
+        
+        // Начать новый раунд
+        async function startNewRound() {
+            // Обновляем текущую цену
+            currentPrice = nextPrice;
+            currentPriceElement.textContent = formatPrice(currentPrice);
+            
+            // Добавляем новую цену в историю
+            const now = Date.now();
+            priceHistory.push({ time: now, price: currentPrice });
+            priceHistory.shift(); // Удаляем самую старую цену
+            
+            // Обновляем график
+            if (priceChart) {
+                priceChart.data.labels.push(new Date(now).getHours() + ':00');
+                priceChart.data.labels.shift();
+                priceChart.data.datasets[0].data.push(currentPrice);
+                priceChart.data.datasets[0].data.shift();
+                priceChart.update();
+            }
+            
+            // Получаем новую текущую цену
+            await fetchBitcoinPrice();
+            
+            resultElement.style.display = 'none';
+            upButton.disabled = false;
+            downButton.disabled = false;
+            canPredict = true;
+            
+            startTimer();
+        }
+        
+        // Форматирование цены
+        function formatPrice(price) {
+            return '$' + price.toFixed(2);
+        }
+        
+        // Загрузка таблицы лидеров
+        function loadLeaderboard() {
+            // В реальном приложении здесь должен быть запрос к серверу
+            // Для демонстрации создаем фиктивные данные
+            const leaderboardData = [
+                { name: 'Сатоши Накамото', score: 250 },
+                { name: 'Илон Маск', score: 180 },
+                { name: 'Виталик Бутерин', score: 165 },
+                { name: 'Майкл Сейлор', score: 140 },
+                { name: 'Вы', score: userCoins },
+                { name: 'Чарли Ли', score: 95 },
+                { name: 'Барри Силберт', score: 80 },
+                { name: 'Кэмерон Уинклвосс', score: 75 },
+                { name: 'Тайлер Уинклвосс', score: 70 },
+                { name: 'Брайан Армстронг', score: 65 }
+            ];
+            
+            // Сортируем по очкам
+            leaderboardData.sort((a, b) => b.score - a.score);
+            
+            // Отображаем таблицу лидеров
+            leaderboardListElement.innerHTML = '';
+            leaderboardData.forEach((item, index) => {
+                const leaderboardItem = document.createElement('div');
+                leaderboardItem.className = 'leaderboard-item';
+                if (item.name === 'Вы') {
+                    leaderboardItem.style.backgroundColor = 'rgba(255, 153, 0, 0.2)';
+                }
+                
+                leaderboardItem.innerHTML = `
+                    <div class="leaderboard-rank">${index + 1}</div>
+                    <div class="leaderboard-name">${item.name}</div>
+                    <div class="leaderboard-score">${item.score} 🪙</div>
+                `;
+                
+                leaderboardListElement.appendChild(leaderboardItem);
+            });
+        }
+        
+        // Переключение между вкладками
+        function switchTab(tabIndex) {
+            // Делаем все вкладки неактивными
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // Активируем выбранную вкладку
+            document.querySelectorAll('.tab')[tabIndex].classList.add('active');
+            document.querySelectorAll('.tab-content')[tabIndex].classList.add('active');
+            
+            // Если выбрана вкладка лидеров, обновляем таблицу
+            if (tabIndex === 2) {
+                loadLeaderboard();
+            }
+        }
+        
+        // Запуск игры при загрузке страницы
+        document.addEventListener('DOMContentLoaded', initGame);
+    </script>
+</body>
+</html>
